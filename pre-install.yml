@@ -1,0 +1,26 @@
+---
+- name: Prerequisite
+  hosts: all
+  become: yes
+  tasks:
+  - name: yum update
+    ansible.builtin.yum:
+      name: "*"
+      state: latest
+  - name: yum install MySql and AWS CW agent
+    ansible.builtin.yum:
+      name: 
+        - "mysql"
+        - "amazon-cloudwatch-agent"
+        - "aws-cli"
+      state: latest
+  - name: pip install PyMySQL
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
+    ansible.builtin.pip:
+      name: PyMySQL
+      executable: /usr/bin/pip3
+      state: present
+  - name: Install ansible-galaxy collection community.general, ansible.posix and community.mysql
+    ansible.builtin.shell: 
+      cmd: 'ansible-galaxy collection install -r requirements.yml'
