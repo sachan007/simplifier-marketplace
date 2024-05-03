@@ -50,21 +50,9 @@
       fstype: xfs
       opts: noatime
       state: mounted
-  - name: Give ec2-user permissions to an dev folder
+  - name: Give ec2-user permissions to an designtime folder
     ansible.builtin.file:
-      path: /var/lib/simplifier/dev/workflow-designtime/data
-      owner: ec2-user
-      group: ec2-user
-      recurse: true
-  - name: Give ec2-user permissions to an qa folder
-    ansible.builtin.file:
-      path: /var/lib/simplifier/qa/workflow-designtime/data
-      owner: ec2-user
-      group: ec2-user
-      recurse: true
-  - name: Give ec2-user permissions to an prod folder
-    ansible.builtin.file:
-      path: /var/lib/simplifier/prod/workflow-designtime/data
+      path: /var/lib/simplifier/workflow-designtime/data
       owner: ec2-user
       group: ec2-user
       recurse: true
