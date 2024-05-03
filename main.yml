@@ -1,82 +1,147 @@
+---
 - name: Bootstrap
   hosts: all
-  become: 'yes'
+  become: yes
   vars:
-    ecs: '{{ ECS_CLUSTER }}'
-    usr: '{{ DB_USER }}'
-    pas: '{{ DB_PASS }}'
-    host: '{{ DB_HOST }}'
+    ecs: "{{ ECS_CLUSTER }}"
+    aki: "{{ AGENT_AKI }}"
+    sak: "{{ AGENT_SAK }}"
+    usr: "{{ DB_USER }}"
+    pas: "{{ DB_PASS }}"
+    host: "{{ DB_HOST }}"
+#    simplifier_version_prod: "{{ SIMPLIFIER_VERSION_PROD }}"
+#    simplifier_version_qa: "{{ SIMPLIFIER_VERSION_QA }}"
+#    simplifier_version_dev: "{{ SIMPLIFIER_VERSION_DEV }}"
   tasks:
-    - name: Create a directory /etc/ecs if it does not exist
-      ansible.builtin.file:
-        path: /etc/ecs
-        state: directory
-    - name: Creating a file with ECS cluster Name
-      ansible.builtin.copy:
-        dest: /etc/ecs/ecs.config
-        content: |
-          ECS_CLUSTER={{ ecs }}
-    - name: agent.db state check
-      stat: path=/var/lib/ecs/data/agent.db
-      register: file_stat
-    - name: Move file to backup
-      command: >-
-        mv /var/lib/ecs/data/agent.db
-        /var/lib/ecs/data/agent.db.movedByTerraform
-      when: file_stat.stat.exists
-      notify:
-        - Restart ecs
-    - name: Create a simplifier directory if it does not exist
-      ansible.builtin.file:
-        path: /var/lib/simplifier
-        state: directory
-    - name: >-
-        Wait until the mounted disc is as file in /dev is present before
-        continuing
-      ansible.builtin.wait_for:
-        path: /dev/nvme1n1
-    - name: Create a XFS filesystem on mounted disc
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
-      filesystem:
-        fstype: xfs
-        dev: /dev/nvme1n1
-    - name: get UUID of mounted disc
-      ansible.builtin.shell:
-        cmd: blkid /dev/nvme1n1 | cut -f2 -d" "
-      register: uuid
-    - name: Mount up device by UUID
-      ansible.posix.mount:
-        path: /var/lib/simplifier
-        src: '{{ uuid.stdout }}'
-        fstype: xfs
-        opts: noatime
-        state: mounted
-    - name: Give ec2-user permissions to an designtime folder
-      ansible.builtin.file:
-        path: /var/lib/simplifier/workflow-designtime/data
-        owner: ec2-user
-        group: ec2-user
-        recurse: true
-    - name: Create a new database with standard DB Names
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
-        mysql_databases:
-          - simplifier
-          - simplifier_content
-          - simplifier_session
-          - simplifier_keyvalue
-          - simplifier_jsonstore
-          - simplifier_wrt
-          - simplifier_wdt
-      community.mysql.mysql_db:
-        name: '{{ item }}'
-        login_user: '{{ usr }}'
-        login_host: '{{ host }}'
-        login_password: '{{ pas }}'
-        state: present
-      loop: '{{ mysql_databases }}'
+  - name: Create a directory /etc/ecs if it does not exist
+    ansible.builtin.file:
+      path: /etc/ecs
+      state: directory
+  - name: Creating a file with ECS cluster Name
+    ansible.builtin.copy:
+      dest: "/etc/ecs/ecs.config"
+      content: |
+        ECS_CLUSTER={{ ecs }}-ECS-Cluster
+  - name: agent.db state check
+    stat: path=/var/lib/ecs/data/agent.db
+    register: file_stat
+  - name: Move file to backup
+    command: mv /var/lib/ecs/data/agent.db /var/lib/ecs/data/agent.db.movedByTerraform
+    when: file_stat.stat.exists
+    notify:
+      - Restart ecs
+  - name: Create a simplifier directory if it does not exist
+    ansible.builtin.file:
+      path: /var/lib/simplifier
+      state: directory
+  - name: Wait until the mounted disc is as file in /dev is present before continuing
+    ansible.builtin.wait_for:
+      path: /dev/nvme1n1
+  - name: Create a XFS filesystem on mounted disc
+#    ignore_errors: true
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
+    filesystem:
+      fstype: xfs
+      dev: /dev/nvme1n1
+  - name: get UUID of mounted disc
+    ansible.builtin.shell: 
+      cmd: 'blkid /dev/nvme1n1 | cut -f2 -d" "'
+    register: uuid
+  - name: Mount up device by UUID
+    ansible.posix.mount:
+      path: /var/lib/simplifier
+      src: "{{ uuid.stdout }}"
+      fstype: xfs
+      opts: noatime
+      state: mounted
+  - name: Give ec2-user permissions to an dev folder
+    ansible.builtin.file:
+      path: /var/lib/simplifier/dev/workflow-designtime/data
+      owner: ec2-user
+      group: ec2-user
+      recurse: true
+  - name: Give ec2-user permissions to an qa folder
+    ansible.builtin.file:
+      path: /var/lib/simplifier/qa/workflow-designtime/data
+      owner: ec2-user
+      group: ec2-user
+      recurse: true
+  - name: Give ec2-user permissions to an prod folder
+    ansible.builtin.file:
+      path: /var/lib/simplifier/prod/workflow-designtime/data
+      owner: ec2-user
+      group: ec2-user
+      recurse: true
+  - name: Create a new database with standard DB Names
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
+      mysql_databases:
+        - prod_simplifier
+        - prod_simplifier_content
+        - prod_simplifier_session
+        - prod_simplifier_keyvalue
+        - prod_simplifier_jsonstore
+        - prod_simplifier_wrt
+        - prod_simplifier_wdt
+        - dev_simplifier
+        - dev_simplifier_content
+        - dev_simplifier_session
+        - dev_simplifier_keyvalue
+        - dev_simplifier_jsonstore
+        - dev_simplifier_wrt
+        - dev_simplifier_wdt
+        - qa_simplifier
+        - qa_simplifier_content
+        - qa_simplifier_session
+        - qa_simplifier_keyvalue
+        - qa_simplifier_jsonstore
+        - qa_simplifier_wrt
+        - qa_simplifier_wdt
+    community.mysql.mysql_db:
+      name: "{{ item }}"
+      login_user: "{{ usr }}"
+      login_host: "{{ host }}"
+      login_password: "{{ pas }}"
+      state: present
+    loop: "{{ mysql_databases }}"
+  - name: Creating a Credential file for CW agent
+    ansible.builtin.copy:
+      dest: "/opt/aws/amazon-cloudwatch-agent/etc/credentials"
+      content: |
+        [AmazonCloudWatchAgent]
+        aws_access_key_id = "{{ aki }}"
+        aws_secret_access_key = "{{ sak }}"
+    notify:
+      - Restart agent
+  - name: Creating a agen settings file to use credentials from above step
+    ansible.builtin.copy:
+      dest: "/opt/aws/amazon-cloudwatch-agent/etc/common-config.toml"
+      content: |
+        [credentials]
+            shared_credential_profile = "AmazonCloudWatchAgent"
+            shared_credential_file = "/opt/aws/amazon-cloudwatch-agent/etc/credentials"
+    notify:
+      - Restart agent
+  - name: Creating CW agent Metric configuration file
+    ansible.builtin.template:
+      src: amazon-cloudwatch-agent.j2
+      dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    notify:
+      - Restart agent
+  - name: Create a GC directory if it does not exist
+    ansible.builtin.file:
+      path: /var/lib/simplifier/garbage-collector
+      state: directory
+  - name: Creating garbage collector script
+    ansible.builtin.template:
+      src: garbage-collector.j2
+      dest: /var/lib/simplifier/garbage-collector/garbage-collector.sh
   handlers:
-    ansible.builtin.service:
-      name: ecs
-      state: restarted
+    - name: Restart agent
+      ansible.builtin.shell: 
+        cmd: '/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s'
+    - name: Restart ecs
+      ansible.builtin.service:
+        name: ecs
+        state: restarted
