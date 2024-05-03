@@ -1,12 +1,11 @@
----
 - name: Bootstrap
   hosts: all
-  become: yes
+  become: 'yes'
   vars:
-    ecs: "{{ ECS_CLUSTER }}"
-    usr: "{{ DB_USER }}"
-    pas: "{{ DB_PASS }}"
-    host: "{{ DB_HOST }}"
+    ecs: '{{ ECS_CLUSTER }}'
+    usr: '{{ DB_USER }}'
+    pas: '{{ DB_PASS }}'
+    host: '{{ DB_HOST }}'
   tasks:
     - name: Create a directory /etc/ecs if it does not exist
       ansible.builtin.file:
@@ -21,7 +20,9 @@
       stat: path=/var/lib/ecs/data/agent.db
       register: file_stat
     - name: Move file to backup
-      command: mv /var/lib/ecs/data/agent.db /var/lib/ecs/data/agent.db.movedByTerraform
+      command: >-
+        mv /var/lib/ecs/data/agent.db
+        /var/lib/ecs/data/agent.db.movedByTerraform
       when: file_stat.stat.exists
       notify:
         - Restart ecs
@@ -29,7 +30,8 @@
       ansible.builtin.file:
         path: /var/lib/simplifier
         state: directory
-    - name: Wait until the mounted disc is as file in /dev is present before
+    - name: >-
+        Wait until the mounted disc is as file in /dev is present before
         continuing
       ansible.builtin.wait_for:
         path: /dev/nvme1n1
@@ -46,7 +48,7 @@
     - name: Mount up device by UUID
       ansible.posix.mount:
         path: /var/lib/simplifier
-        src: "{{ uuid.stdout }}"
+        src: '{{ uuid.stdout }}'
         fstype: xfs
         opts: noatime
         state: mounted
@@ -68,12 +70,12 @@
           - simplifier_wrt
           - simplifier_wdt
       community.mysql.mysql_db:
-        name: "{{ item }}"
-        login_user: "{{ usr }}"
-        login_host: "{{ host }}"
-        login_password: "{{ pas }}"
+        name: '{{ item }}'
+        login_user: '{{ usr }}'
+        login_host: '{{ host }}'
+        login_password: '{{ pas }}'
         state: present
-      loop: "{{ mysql_databases }}"
+      loop: '{{ mysql_databases }}'
   handlers:
     ansible.builtin.service:
       name: ecs
