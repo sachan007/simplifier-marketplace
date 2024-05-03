@@ -8,73 +8,73 @@
     pas: "{{ DB_PASS }}"
     host: "{{ DB_HOST }}"
   tasks:
-  - name: Create a directory /etc/ecs if it does not exist
-    ansible.builtin.file:
-      path: /etc/ecs
-      state: directory
-  - name: Creating a file with ECS cluster Name
-    ansible.builtin.copy:
-      dest: "/etc/ecs/ecs.config"
-      content: |
-        ECS_CLUSTER={{ ecs }}
-  - name: agent.db state check
-    stat: path=/var/lib/ecs/data/agent.db
-    register: file_stat
-  - name: Move file to backup
-    command: mv /var/lib/ecs/data/agent.db /var/lib/ecs/data/agent.db.movedByTerraform
-    when: file_stat.stat.exists
-    notify:
-      - Restart ecs
-  - name: Create a simplifier directory if it does not exist
-    ansible.builtin.file:
-      path: /var/lib/simplifier
-      state: directory
-  - name: Wait until the mounted disc is as file in /dev is present before continuing
-    ansible.builtin.wait_for:
-      path: /dev/nvme1n1
-  - name: Create a XFS filesystem on mounted disc
-#    ignore_errors: true
-    vars:
-      ansible_python_interpreter: /usr/bin/python3
-    filesystem:
-      fstype: xfs
-      dev: /dev/nvme1n1
-  - name: get UUID of mounted disc
-    ansible.builtin.shell: 
-      cmd: 'blkid /dev/nvme1n1 | cut -f2 -d" "'
-    register: uuid
-  - name: Mount up device by UUID
-    ansible.posix.mount:
-      path: /var/lib/simplifier
-      src: "{{ uuid.stdout }}"
-      fstype: xfs
-      opts: noatime
-      state: mounted
-  - name: Give ec2-user permissions to an designtime folder
-    ansible.builtin.file:
-      path: /var/lib/simplifier/workflow-designtime/data
-      owner: ec2-user
-      group: ec2-user
-      recurse: true
-  - name: Create a new database with standard DB Names
-    vars:
-      ansible_python_interpreter: /usr/bin/python3
-      mysql_databases:
-        - simplifier
-        - simplifier_content
-        - simplifier_session
-        - simplifier_keyvalue
-        - simplifier_jsonstore
-        - simplifier_wrt
-        - simplifier_wdt
-    community.mysql.mysql_db:
-      name: "{{ item }}"
-      login_user: "{{ usr }}"
-      login_host: "{{ host }}"
-      login_password: "{{ pas }}"
-      state: present
-    loop: "{{ mysql_databases }}"
+    - name: Create a directory /etc/ecs if it does not exist
+      ansible.builtin.file:
+        path: /etc/ecs
+        state: directory
+    - name: Creating a file with ECS cluster Name
+      ansible.builtin.copy:
+        dest: /etc/ecs/ecs.config
+        content: |
+          ECS_CLUSTER={{ ecs }}
+    - name: agent.db state check
+      stat: path=/var/lib/ecs/data/agent.db
+      register: file_stat
+    - name: Move file to backup
+      command: mv /var/lib/ecs/data/agent.db /var/lib/ecs/data/agent.db.movedByTerraform
+      when: file_stat.stat.exists
+      notify:
+        - Restart ecs
+    - name: Create a simplifier directory if it does not exist
+      ansible.builtin.file:
+        path: /var/lib/simplifier
+        state: directory
+    - name: Wait until the mounted disc is as file in /dev is present before
+        continuing
+      ansible.builtin.wait_for:
+        path: /dev/nvme1n1
+    - name: Create a XFS filesystem on mounted disc
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      filesystem:
+        fstype: xfs
+        dev: /dev/nvme1n1
+    - name: get UUID of mounted disc
+      ansible.builtin.shell:
+        cmd: blkid /dev/nvme1n1 | cut -f2 -d" "
+      register: uuid
+    - name: Mount up device by UUID
+      ansible.posix.mount:
+        path: /var/lib/simplifier
+        src: "{{ uuid.stdout }}"
+        fstype: xfs
+        opts: noatime
+        state: mounted
+    - name: Give ec2-user permissions to an designtime folder
+      ansible.builtin.file:
+        path: /var/lib/simplifier/workflow-designtime/data
+        owner: ec2-user
+        group: ec2-user
+        recurse: true
+    - name: Create a new database with standard DB Names
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+        mysql_databases:
+          - simplifier
+          - simplifier_content
+          - simplifier_session
+          - simplifier_keyvalue
+          - simplifier_jsonstore
+          - simplifier_wrt
+          - simplifier_wdt
+      community.mysql.mysql_db:
+        name: "{{ item }}"
+        login_user: "{{ usr }}"
+        login_host: "{{ host }}"
+        login_password: "{{ pas }}"
+        state: present
+      loop: "{{ mysql_databases }}"
   handlers:
-      ansible.builtin.service:
-        name: ecs
-        state: restarted
+    ansible.builtin.service:
+      name: ecs
+      state: restarted
