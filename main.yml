@@ -4,14 +4,9 @@
   become: yes
   vars:
     ecs: "{{ ECS_CLUSTER }}"
-    aki: "{{ AGENT_AKI }}"
-    sak: "{{ AGENT_SAK }}"
     usr: "{{ DB_USER }}"
     pas: "{{ DB_PASS }}"
     host: "{{ DB_HOST }}"
-#    simplifier_version_prod: "{{ SIMPLIFIER_VERSION_PROD }}"
-#    simplifier_version_qa: "{{ SIMPLIFIER_VERSION_QA }}"
-#    simplifier_version_dev: "{{ SIMPLIFIER_VERSION_DEV }}"
   tasks:
   - name: Create a directory /etc/ecs if it does not exist
     ansible.builtin.file:
