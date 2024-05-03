@@ -72,27 +72,13 @@
     vars:
       ansible_python_interpreter: /usr/bin/python3
       mysql_databases:
-        - prod_simplifier
-        - prod_simplifier_content
-        - prod_simplifier_session
-        - prod_simplifier_keyvalue
-        - prod_simplifier_jsonstore
-        - prod_simplifier_wrt
-        - prod_simplifier_wdt
-        - dev_simplifier
-        - dev_simplifier_content
-        - dev_simplifier_session
-        - dev_simplifier_keyvalue
-        - dev_simplifier_jsonstore
-        - dev_simplifier_wrt
-        - dev_simplifier_wdt
-        - qa_simplifier
-        - qa_simplifier_content
-        - qa_simplifier_session
-        - qa_simplifier_keyvalue
-        - qa_simplifier_jsonstore
-        - qa_simplifier_wrt
-        - qa_simplifier_wdt
+        - simplifier
+        - simplifier_content
+        - simplifier_session
+        - simplifier_keyvalue
+        - simplifier_jsonstore
+        - simplifier_wrt
+        - simplifier_wdt
     community.mysql.mysql_db:
       name: "{{ item }}"
       login_user: "{{ usr }}"
@@ -100,42 +86,7 @@
       login_password: "{{ pas }}"
       state: present
     loop: "{{ mysql_databases }}"
-  - name: Creating a Credential file for CW agent
-    ansible.builtin.copy:
-      dest: "/opt/aws/amazon-cloudwatch-agent/etc/credentials"
-      content: |
-        [AmazonCloudWatchAgent]
-        aws_access_key_id = "{{ aki }}"
-        aws_secret_access_key = "{{ sak }}"
-    notify:
-      - Restart agent
-  - name: Creating a agen settings file to use credentials from above step
-    ansible.builtin.copy:
-      dest: "/opt/aws/amazon-cloudwatch-agent/etc/common-config.toml"
-      content: |
-        [credentials]
-            shared_credential_profile = "AmazonCloudWatchAgent"
-            shared_credential_file = "/opt/aws/amazon-cloudwatch-agent/etc/credentials"
-    notify:
-      - Restart agent
-  - name: Creating CW agent Metric configuration file
-    ansible.builtin.template:
-      src: amazon-cloudwatch-agent.j2
-      dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-    notify:
-      - Restart agent
-  - name: Create a GC directory if it does not exist
-    ansible.builtin.file:
-      path: /var/lib/simplifier/garbage-collector
-      state: directory
-  - name: Creating garbage collector script
-    ansible.builtin.template:
-      src: garbage-collector.j2
-      dest: /var/lib/simplifier/garbage-collector/garbage-collector.sh
   handlers:
-    - name: Restart agent
-      ansible.builtin.shell: 
-        cmd: '/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s'
     - name: Restart ecs
       ansible.builtin.service:
         name: ecs
