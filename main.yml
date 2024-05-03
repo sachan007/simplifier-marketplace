@@ -16,7 +16,7 @@
     ansible.builtin.copy:
       dest: "/etc/ecs/ecs.config"
       content: |
-        ECS_CLUSTER={{ ecs }}-ECS-Cluster
+        ECS_CLUSTER={{ ecs }}
   - name: agent.db state check
     stat: path=/var/lib/ecs/data/agent.db
     register: file_stat
